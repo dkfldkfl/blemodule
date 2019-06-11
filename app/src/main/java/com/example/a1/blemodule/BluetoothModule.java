@@ -16,7 +16,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 
 public class BluetoothModule {
@@ -25,7 +24,7 @@ public class BluetoothModule {
     private BluetoothGatt bluetoothGatt;
     private BluetoothConnectImpl btConnectCallback;
     private BluetoothWriteImpl btWriteCallback;
-    private BluetoothGattCharacteristic writeGattCharacteristic;
+    public BluetoothGattCharacteristic writeGattCharacteristic;
     private Context context;
     /**
      * 블루투스 콜백
@@ -41,10 +40,23 @@ public class BluetoothModule {
 
             Log.d(TAG, "onConnectionStateChange: " + status + " " + newState);
             if (newState == BluetoothProfile.STATE_CONNECTED) {
+
                 bluetoothGatt.discoverServices(); // onServicesDiscovered() 호출 (서비스 연결 위해 꼭 필요)
+//                handler.post(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        Toast.makeText(context, "연결됐어요", Toast.LENGTH_SHORT).show();
+//                    }
+//                });
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Toast.makeText(context, "연결이 끊어졌습니다\n다시 연결중입니다기다려주세요", Toast.LENGTH_SHORT).show();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context, "연결이 끊어졌습니다\n다시 연결중입니다기다려주세요", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
             }
         }
 
@@ -59,34 +71,18 @@ public class BluetoothModule {
                 BluetoothGattCharacteristic ch = gatt.getService(IOBEDApplication.IOBED_NOTI_SERIVCE).getCharacteristic(IOBEDApplication.IOBED_CHARACTERISTIC_NOTY);
                 gatt.setCharacteristicNotification(ch, true);
 
-                for (BluetoothGattDescriptor descriptor : ch.getDescriptors()) {
-                    try {
-                        Log.d(TAG, "NOTI의 DESCRIPTOR : " + descriptor.getUuid() + " : " + new String(descriptor.getValue(), "UTF-8"));
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                }
+//                for (BluetoothGattDescriptor descriptor : ch.getDescriptors()) {
+//                    try {
+//                        Log.d(TAG, "NOTI의 DESCRIPTOR : " + descriptor.getUuid() + " : " + new String(descriptor.getValue(), "UTF-8"));
+//                    } catch (UnsupportedEncodingException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
 
                 BluetoothGattDescriptor descriptor = ch.getDescriptor(IOBEDApplication.IOBED_CCCD);
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 bluetoothGatt.writeDescriptor(descriptor);
-                BluetoothGattService service = bluetoothGatt.getService(IOBEDApplication.IOBED_SERIVCE);
-                writeGattCharacteristic = service.getCharacteristic(IOBEDApplication.IOBED_CHARACTERISTIC_READ_WRITE);
 
-                try {
-                    Log.d(TAG, "Noti UUID : " + new String(ch.getValue(), "UTF-8"));
-                    Log.d(TAG, "write UUID : " + new String(writeGattCharacteristic.getValue(), "UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-
-                for (BluetoothGattDescriptor dis : writeGattCharacteristic.getDescriptors()) {
-                    try {
-                        Log.d(TAG, "Write의 DESCRIPTOR : " + dis.getUuid() + " : " + new String(dis.getValue(), "UTF-8"));
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                }
             }
         }
 
@@ -96,6 +92,7 @@ public class BluetoothModule {
                 @Override
                 public void run() {
                     btConnectCallback.onSuccessConnect(gatt.getDevice()); // 통신 준비 완료
+
                 }
             });
         }
@@ -135,7 +132,6 @@ public class BluetoothModule {
         return BluetoothModuleHolder.instance;
     }
 
-
     public boolean isConnected() {
 
         return bluetoothGatt != null && bluetoothGatt.connect();
@@ -172,6 +168,10 @@ public class BluetoothModule {
      */
     public void sendProtocol(String protocol, BluetoothWriteImpl btWriteCallback) {
         if (isConnected()) {
+
+            BluetoothGattService service = bluetoothGatt.getService(IOBEDApplication.IOBED_NOTI_SERIVCE);
+            writeGattCharacteristic = service.getCharacteristic(IOBEDApplication.IOBED_CHARACTERISTIC_NOTY);
+
             this.btWriteCallback = btWriteCallback;
             protocol = "<" + protocol.toUpperCase() + ">";
             writeGattCharacteristic.setValue(protocol);
@@ -194,5 +194,6 @@ public class BluetoothModule {
     private static class BluetoothModuleHolder {
         private static final BluetoothModule instance = new BluetoothModule();
     }
+
 
 }

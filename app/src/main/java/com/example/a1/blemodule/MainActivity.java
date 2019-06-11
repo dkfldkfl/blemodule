@@ -14,7 +14,6 @@ import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
-
     private static final String TAG = "TEST";
     TextView tv1, tv2;
     EditText edit;
@@ -53,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
                 bluetoothModule.sendProtocol(input, new BluetoothModule.BluetoothWriteImpl() {
                     @Override
                     public void onSuccessWrite(int status, String data) throws IOException {
-                        tv2.setText("받은 값 " + data);
+                        tv2.setText(tv2.getText() + "\n" +data);
                     }
 
                     @Override
@@ -71,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "onActivityResult: " + data.getStringExtra(BluetoothDevice.EXTRA_DEVICE));
             String deviceAddress = data.getStringExtra(BluetoothDevice.EXTRA_DEVICE);
+            bluetoothModule.disconnect();
 
             bluetoothModule.gattConnect(deviceAddress, new BluetoothModule.BluetoothConnectImpl() {
                 @Override
@@ -85,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        super.onActivityResult(requestCode, resultCode, data);
     }
 }
 
