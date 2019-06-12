@@ -20,31 +20,46 @@
         android:id="@+id/tv2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/tv1"
-
-        />
+        android:layout_below="@+id/tv1" />
 
     <EditText
         android:id="@+id/edit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/btn_scan"
-        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
         android:inputType="text"
         tools:ignore="LabelFor" />
 
     <Button
         android:id="@+id/btn_scan"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/btn_write"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:text="스캔" />
+
     <Button
         android:id="@+id/btn_write"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="쓰기"
-        android:layout_alignParentBottom="true"
-        />
+        android:layout_below="@id/btn_scan"
+        android:layout_alignParentEnd="true"
+        android:text="쓰기" />
+
+    <Button
+        android:id="@+id/btn_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_write"
+        android:layout_alignParentEnd="true"
+        android:text="릴랙스 시작" />
+
+    <Button
+        android:id="@+id/btn_stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_start"
+        android:layout_alignParentEnd="true"
+        android:text="릴랙스 종료" />
 
 </RelativeLayout>

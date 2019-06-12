@@ -18,7 +18,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.ParcelUuid;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Gravity;
@@ -42,22 +41,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DeviceListBTActivity extends Activity {
-    private static final int REQUEST_ENABLE_BT = 99;
-    private BluetoothAdapter mBluetoothAdapter;
 
-    private TextView mEmptyList;
     public static final String TAG = "DeviceListBTActivity";
-
+    private static final int REQUEST_ENABLE_BT = 99;
+    private static final long SCAN_PERIOD = 10000; //scanning for 10 seconds
     ArrayList<BluetoothDevice> deviceList = new ArrayList<>();
     ArrayList<Integer> rssiList = new ArrayList<>();
+    ListView listView;
+    private BluetoothAdapter mBluetoothAdapter;
+    private TextView mEmptyList;
     private BTAdapter deviceAdapter;
-    private static final long SCAN_PERIOD = 10000; //scanning for 10 seconds
     private Handler mHandler;
     private boolean mScanning;
-
-    ListView listView;
     private BluetoothLeScanner scanner;
-
     private Button cancelButton;
 
     @Override
@@ -74,7 +70,6 @@ public class DeviceListBTActivity extends Activity {
         //등록됐을때 맥주소를 DB에 저장해놓고, 저장플래그도 설정하고
     }
 
-
     private void checkPermissionBluetooth() {
         /**
          * 로직 : 1. 블루투스 검사
@@ -89,7 +84,6 @@ public class DeviceListBTActivity extends Activity {
          *                  2-2-2. 허용창에서 허용하지 않은 경우 : 설정창 이동 창 띄움
          *                         2-2-2-1. 설정창에서 허용하지 않은 경우 : finish
          *                         2-2-2-2. 설정창에서 허용한 경우 : 스캔 시작
-         *
          */
 
         final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -97,8 +91,7 @@ public class DeviceListBTActivity extends Activity {
 
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "이 기기는 블루투스를 지원하지 않습니다", Toast.LENGTH_SHORT).show();
-
-            finish(); //이런 예외상황이 있을 수 있나. 어차피 최소버전은 21인데
+            finish();
         }
 
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
@@ -143,6 +136,7 @@ public class DeviceListBTActivity extends Activity {
     private void initView() {
         /* Initialize device list container */
 
+        // TODO: 2019-06-11 화면 수정 필요 액티비티로 할필요없음
         setContentView(R.layout.activity_device_list_bt);
         android.view.WindowManager.LayoutParams layoutParams = this.getWindow().getAttributes();
         layoutParams.gravity = Gravity.TOP;
@@ -167,65 +161,20 @@ public class DeviceListBTActivity extends Activity {
         scanLeDevice(true);
     }
 
-    /**
-     * 킷캣 , 롤리팝 분기 처리
-     *
-     * @param enable
-     */
-
-    @SuppressLint("NewApi")
-    private void scanLeDevice(final boolean enable) {
-
-        if (enable) {
-
-            BluetoothModule.getInstance().disconnect();
-
-            //롤리팝 기준으로 분기 처리 (킷캣 별도 처리)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        scanner.stopScan(scanCallback);
-                        mScanning = false;
-                        cancelButton.setText("스캔시작");
-                    }
-                }, SCAN_PERIOD);
-
-                mScanning = true;
-                scanner = mBluetoothAdapter.getBluetoothLeScanner();
-                List<ScanFilter> scanFilters = new ArrayList<>();
-                ScanFilter scanFilter = new ScanFilter.Builder()
-//                        .setServiceUuid(ParcelUuid.fromString(IOBEDApplication.IOBED_SERIVCE.toString()))
-                        .build();
-
-                scanFilters.add(scanFilter);
-                ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC).build();
-                scanner.startScan(scanFilters, scanSettings, scanCallback);
-                cancelButton.setText("취소");
-
-            } else {
-                mHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mScanning = false;
-                        mBluetoothAdapter.stopLeScan(scanLeCallBack);
-                        cancelButton.setText("스캔시작");
-                    }
-                }, SCAN_PERIOD);
-
-                mScanning = true;
-                mBluetoothAdapter.startLeScan(scanLeCallBack);
-                cancelButton.setText("취소");
-
-            }
+    private OnItemClickListener deviceClickListener = new OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            Intent result = new Intent();
+            result.putExtra(BluetoothDevice.EXTRA_DEVICE, deviceList.get(position).getAddress());
+            setResult(Activity.RESULT_OK, result);
+            finish();
         }
-    }
+    };
 
     public BluetoothAdapter.LeScanCallback scanLeCallBack = new BluetoothAdapter.LeScanCallback() {
         @Override
         public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
 
-            if (device.getName().contains("iOBED")) {
                 if (deviceList.contains(device)) //중복 검색 제외
                     return;
 
@@ -235,7 +184,6 @@ public class DeviceListBTActivity extends Activity {
                         addDevice(device, rssi);
                     }
                 });
-            }
         }
     };
 
@@ -243,6 +191,7 @@ public class DeviceListBTActivity extends Activity {
     public ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, final ScanResult result) {
+
             super.onScanResult(callbackType, result);
 
             if (deviceList.contains(result.getDevice())) //중복 검색 제외
@@ -268,6 +217,58 @@ public class DeviceListBTActivity extends Activity {
         }
     };
 
+    /**
+     * 킷캣 , 롤리팝 분기 처리
+     *
+     * @param enable
+     */
+
+    private void scanLeDevice(final boolean enable) {
+
+        if (enable) {
+            BluetoothModule.getInstance().disconnect();
+
+            //롤리팝 기준으로 분기 처리 (킷캣 별도 처리)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        scanner.stopScan(scanCallback);
+                        mScanning = false;
+                        cancelButton.setText("스캔시작");
+                    }
+                }, SCAN_PERIOD);
+
+                mScanning = true;
+                scanner = mBluetoothAdapter.getBluetoothLeScanner();
+                List<ScanFilter> scanFilters = new ArrayList<>();
+                ScanFilter scanFilter = new ScanFilter.Builder()
+//                        .setServiceUuid(ParcelUuid.fromString(IOBEDApplication.IOBED_SERIVCE.toString()))
+                        .build();
+
+                scanFilters.add(scanFilter);
+                ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
+                scanner.startScan(scanFilters, scanSettings, scanCallback);
+                cancelButton.setText("취소");
+
+            } else {
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mScanning = false;
+                        mBluetoothAdapter.stopLeScan(scanLeCallBack);
+                        cancelButton.setText("스캔시작");
+                    }
+                }, SCAN_PERIOD);
+
+                mScanning = true;
+                mBluetoothAdapter.startLeScan(scanLeCallBack);
+                cancelButton.setText("취소");
+
+            }
+        }
+    }
 
     private void addDevice(BluetoothDevice device, int rssi) {
         rssiList.add(rssi);
@@ -276,15 +277,19 @@ public class DeviceListBTActivity extends Activity {
         deviceAdapter.notifyDataSetChanged();
     }
 
-    private OnItemClickListener deviceClickListener = new OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Intent result = new Intent();
-            result.putExtra(BluetoothDevice.EXTRA_DEVICE, deviceList.get(position).getAddress());
-            setResult(Activity.RESULT_OK, result);
-            finish();
-        }
-    };
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 
     class BTAdapter extends BaseAdapter {
         Context context;
@@ -350,20 +355,6 @@ public class DeviceListBTActivity extends Activity {
             }
             return vg;
         }
-    }
-
-    protected void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
     }
 
 }

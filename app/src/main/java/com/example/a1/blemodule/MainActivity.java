@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -12,12 +13,13 @@ import android.widget.TextView;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ItemFragment.OnListFragmentInteractionListener {
 
     private static final String TAG = "TEST";
+    public ItemFragment itemFragment;
     TextView tv1, tv2;
     EditText edit;
-    Button btn_scan, btn_write;
+    Button btn_scan, btn_write, btn_start, btn_stop;
     BluetoothModule bluetoothModule = BluetoothModule.getInstance();
     private int DEVCIE_LIST_BT_ACTIVITY = 99;
 
@@ -31,28 +33,49 @@ public class MainActivity extends AppCompatActivity {
         edit = findViewById(R.id.edit);
         btn_scan = findViewById(R.id.btn_scan);
         btn_write = findViewById(R.id.btn_write);
+        btn_start = findViewById(R.id.btn_start);
+        btn_stop = findViewById(R.id.btn_stop);
+
+
+        btn_start.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+        btn_stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
 
         btn_scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, DeviceListBTActivity.class);
-                startActivityForResult(intent, DEVCIE_LIST_BT_ACTIVITY);
+                itemFragment = ItemFragment.newInstance();
+                itemFragment.show(getSupportFragmentManager(), "ItemFragment");
+
             }
         });
 
         btn_write.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                tv2.setText("");
+
                 String input = edit.getText().toString();
-                if (input.isEmpty()) {
+                if (TextUtils.isEmpty(input)) {
                     return;
                 }
+
+                tv2.setText("");
 
                 bluetoothModule.sendProtocol(input, new BluetoothModule.BluetoothWriteImpl() {
                     @Override
                     public void onSuccessWrite(int status, String data) throws IOException {
-                        tv2.setText(tv2.getText() + "\n" +data);
+                        tv2.setText(tv2.getText() + "\n" + data);
                     }
 
                     @Override
@@ -82,8 +105,31 @@ public class MainActivity extends AppCompatActivity {
                 public void onFailed() {
                     tv1.setText("연결 실패 다시 연결중입니다.");
                 }
-            });
+            }, MainActivity.this);
         }
+
+    }
+
+    @Override
+    public void onListFragmentInteraction(BluetoothDevice item) {
+
+        itemFragment.dismiss();
+        bluetoothModule.disconnect();
+        bluetoothModule.gattConnect(item.getAddress(), new BluetoothModule.BluetoothConnectImpl() {
+            @Override
+            public void onSuccessConnect(BluetoothDevice device) {
+                tv1.setText("연결됐습니다" + device.getName() + " / " + device.getAddress());
+            }
+
+            @Override
+            public void onFailed() {
+                tv1.setText("연결 실패 다시 연결중입니다.");
+            }
+        }, MainActivity.this);
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
 
     }
 }

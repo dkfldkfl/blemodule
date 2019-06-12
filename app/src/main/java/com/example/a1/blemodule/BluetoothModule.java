@@ -21,10 +21,10 @@ import java.io.IOException;
 public class BluetoothModule {
     //BluetoothGatt 객체로 Connect 해주고, writeCharacter 해주는 클래스
     public static final String TAG = "BluetoothModule";
+    public BluetoothGattCharacteristic writeGattCharacteristic;
     private BluetoothGatt bluetoothGatt;
     private BluetoothConnectImpl btConnectCallback;
     private BluetoothWriteImpl btWriteCallback;
-    public BluetoothGattCharacteristic writeGattCharacteristic;
     private Context context;
     /**
      * 블루투스 콜백
@@ -42,12 +42,12 @@ public class BluetoothModule {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
 
                 bluetoothGatt.discoverServices(); // onServicesDiscovered() 호출 (서비스 연결 위해 꼭 필요)
-//                handler.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        Toast.makeText(context, "연결됐어요", Toast.LENGTH_SHORT).show();
-//                    }
-//                });
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context, "연결됐어요", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 handler.post(new Runnable() {
@@ -92,7 +92,6 @@ public class BluetoothModule {
                 @Override
                 public void run() {
                     btConnectCallback.onSuccessConnect(gatt.getDevice()); // 통신 준비 완료
-
                 }
             });
         }
@@ -101,7 +100,6 @@ public class BluetoothModule {
         //전송시 호출
         @Override
         public void onCharacteristicWrite(final BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-
             Log.d(TAG, "onCharacteristicWrite: 보낸 값 : " + characteristic.getStringValue(0));
         }
 
@@ -115,7 +113,7 @@ public class BluetoothModule {
                 public void run() {
                     String value = characteristic.getStringValue(1);
                     value = value.replaceAll(" ", "");
-                    value = value.substring(0, value.length() - 1);
+//                    value = value.substring(0, value.length() - 1);
                     try {
                         Log.d(TAG, "run: " + value);
                         btWriteCallback.onSuccessWrite(0, value);
@@ -133,7 +131,6 @@ public class BluetoothModule {
     }
 
     public boolean isConnected() {
-
         return bluetoothGatt != null && bluetoothGatt.connect();
     }
 
@@ -142,19 +139,21 @@ public class BluetoothModule {
     }
 
     public void disconnect() {
+
         if (isConnected()) {
             bluetoothGatt.disconnect();
+            bluetoothGatt.close();
         }
     }
 
     /**
      * 맥주소를 받아서 connect
      */
-    public void gattConnect(String macAddress, BluetoothConnectImpl btConnectCallback) {
+    public void gattConnect(String macAddress, BluetoothConnectImpl btConnectCallback, Context context) {
 
         this.btConnectCallback = btConnectCallback;
-        context = IOBEDApplication.instance;
-
+//        context = IOBEDApplication.instance;
+        this.context = context;
         final BluetoothManager bm = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter bluetoothAdapter = bm.getAdapter();
 
@@ -174,6 +173,7 @@ public class BluetoothModule {
 
             this.btWriteCallback = btWriteCallback;
             protocol = "<" + protocol.toUpperCase() + ">";
+//            protocol = protocol.toUpperCase();
             writeGattCharacteristic.setValue(protocol);
             bluetoothGatt.writeCharacteristic(writeGattCharacteristic);
         }
@@ -194,6 +194,5 @@ public class BluetoothModule {
     private static class BluetoothModuleHolder {
         private static final BluetoothModule instance = new BluetoothModule();
     }
-
 
 }
