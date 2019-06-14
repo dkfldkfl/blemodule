@@ -23,6 +23,7 @@
         android:layout_below="@+id/tv1" />
 
     <EditText
+        android:focusableInTouchMode="false"
         android:id="@+id/edit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -34,9 +35,9 @@
         android:id="@+id/btn_scan"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
+        android:layout_below="@id/radio"
         android:layout_alignParentEnd="true"
-        android:text="스캔" />
+        android:text="@string/scan" />
 
     <Button
         android:id="@+id/btn_write"
@@ -44,7 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/btn_scan"
         android:layout_alignParentEnd="true"
-        android:text="쓰기" />
+        android:text="직접 쓰기" />
 
     <Button
         android:id="@+id/btn_start"
@@ -61,5 +62,51 @@
         android:layout_below="@id/btn_start"
         android:layout_alignParentEnd="true"
         android:text="릴랙스 종료" />
+
+    <RadioGroup
+        android:id="@+id/radio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="@string/left" />
+
+        <RadioButton
+            android:id="@+id/right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/right" />
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/btn_firm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_stop"
+        android:layout_alignParentEnd="true"
+        android:text="경도조절" />
+
+
+    <org.angmarch.views.NiceSpinner
+        android:id="@+id/locale"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btn_firm"
+        android:layout_alignParentEnd="true"
+        android:hint="선택"
+        android:textAlignment="center"
+        app:backgroundSelector="@drawable/spinner_back_selector" />
+
+    <FrameLayout
+        android:id="@+id/frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/edit"></FrameLayout>
 
 </RelativeLayout>

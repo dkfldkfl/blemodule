@@ -1,7 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">기본</string>
+
+    <string name="app_name">BleModule</string>
     <string name="scan">SCAN</string>
     <string name="left">LEFT</string>
     <string name="right">RIGHT</string>
-
 </resources>

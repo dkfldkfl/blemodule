@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">納木維基，大家共同培養的一棵知識之樹。</string>
+    <string name="scan">扫描</string>
+    <string name="left">左侧</string>
+    <string name="right">右侧</string>
+</resources>

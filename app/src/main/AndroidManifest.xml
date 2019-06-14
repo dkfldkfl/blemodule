@@ -24,9 +24,9 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".DeviceListBTActivity"
-            android:label="@string/app_name"
-            android:theme="@android:style/Theme.Dialog" />
+        <!--<activity-->
+            <!--android:name=".DeviceListBTActivity"-->
+            <!--android:label="@string/app_name"-->
+            <!--android:theme="@android:style/Theme.Dialog" />-->
     </application>
 </manifest>

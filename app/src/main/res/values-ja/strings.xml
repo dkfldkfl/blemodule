@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">テゾン</string>
+    <string name="scan">スキャン</string>
+    <string name="left">左</string>
+    <string name="right">右</string>
+</resources>

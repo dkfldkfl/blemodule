@@ -71,14 +71,6 @@ public class BluetoothModule {
                 BluetoothGattCharacteristic ch = gatt.getService(IOBEDApplication.IOBED_NOTI_SERIVCE).getCharacteristic(IOBEDApplication.IOBED_CHARACTERISTIC_NOTY);
                 gatt.setCharacteristicNotification(ch, true);
 
-//                for (BluetoothGattDescriptor descriptor : ch.getDescriptors()) {
-//                    try {
-//                        Log.d(TAG, "NOTI의 DESCRIPTOR : " + descriptor.getUuid() + " : " + new String(descriptor.getValue(), "UTF-8"));
-//                    } catch (UnsupportedEncodingException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-
                 BluetoothGattDescriptor descriptor = ch.getDescriptor(IOBEDApplication.IOBED_CCCD);
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 bluetoothGatt.writeDescriptor(descriptor);
@@ -113,7 +105,10 @@ public class BluetoothModule {
                 public void run() {
                     String value = characteristic.getStringValue(1);
                     value = value.replaceAll(" ", "");
-//                    value = value.substring(0, value.length() - 1);
+                    value = value.replaceAll(">", "");
+                    if(value.equals(">")){
+                        return;
+                    }
                     try {
                         Log.d(TAG, "run: " + value);
                         btWriteCallback.onSuccessWrite(0, value);
