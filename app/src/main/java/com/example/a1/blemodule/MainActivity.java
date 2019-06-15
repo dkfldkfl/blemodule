@@ -6,7 +6,6 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -15,19 +14,19 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.RadioGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import io.reactivex.Observable;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.angmarch.views.NiceSpinner;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.Single;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity implements ItemFragment.OnListFragmentInteractionListener {
 
@@ -119,36 +118,102 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         btn_start.setOnClickListener(v -> {
 
             //특정 데이터를 반환할때까지 반복 ( Speak like a human. )
-            Observable.timer(1, TimeUnit.SECONDS)
-                    .map(it -> "https://api.github.com/zen")
-                    .map(OkHttpHelper::get)
-//                    .map(leftOb::get)
-                    .repeat()
-//                    .takeUntil()
-                    .subscribe(res -> System.out.println(res));
 
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (radio.getCheckedRadioButtonId() == R.id.left) {
+
+                bluetoothModule.sendProtocol("rxlg0", new BluetoothModule.BluetoothWriteImpl() {
+                    @Override
+                    public void onSuccessWrite(int status, String data) throws IOException {
+                        if (!data.contains("RRLCM")) {
+                            System.out.println("지금 바쁜 상태입니다");
+                        }
+
+                        String protocol = "rxlst";
+                        Observable.just(protocol)
+                                .subscribeOn(Schedulers.single())
+                                .switchMapSingle(it -> get(it))
+                                .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
+                                .takeUntil(it -> {
+                                    if (it.equals("RRLCM")) return true;
+                                    else return false;
+                                }).subscribeWith(new Observer<String>() {
+                            @Override
+                            public void onSubscribe(Disposable d) {
+
+                            }
+
+                            @Override
+                            public void onNext(String s) {
+                                System.out.println(s);
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                System.out.println("왼쪽 정상적으로 종료되었습니다");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailed(Exception e) {
+
+                    }
+                });
+
+
+            } else {
+
+                bluetoothModule.sendProtocol("rxrg0", new BluetoothModule.BluetoothWriteImpl() {
+                    @Override
+                    public void onSuccessWrite(int status, String data) throws IOException {
+                        if (!data.contains("RRRCM")) {
+                            System.out.println("오른쪽 바쁜상태입니다");
+                            return;
+                        }
+
+                        String protocol = "rxrst";
+                        Observable.just(protocol)
+                                .subscribeOn(Schedulers.single())
+                                .switchMapSingle(it -> get(it))
+                                .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
+                                .takeUntil(it -> {
+                                    if (it.equals("RRRCM")) return true;
+                                    else return false;
+                                }).subscribeWith(new Observer<String>() {
+                            @Override
+                            public void onSubscribe(Disposable d) {
+
+                            }
+
+                            @Override
+                            public void onNext(String s) {
+                                System.out.println(s);
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                System.out.println("오른쪽 정상적으로 종료되었습니다");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailed(Exception e) {
+
+                    }
+                });
+
             }
-
-//            if (radio.getCheckedRadioButtonId() == R.id.left) {
-//                if (leftThread == null) {
-//                    leftThread = new RelaxLeftThread("L");
-//                    leftThread.start();
-//                } else {
-//                    System.out.println("L 스레드 동작중이다");
-//                }
-//
-//            } else {
-//                if (rightThread == null) {
-//                    rightThread = new RelaxRightThread("R");
-//                    rightThread.start();
-//                } else {
-//                    System.out.println("R 스레드 동작중이다");
-//                }
-//            }
 
         });
 
@@ -169,37 +234,6 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
         });
 
-        btn_scan.setOnClickListener(v -> {
-            itemFragment = ItemFragment.newInstance();
-            itemFragment.show(getSupportFragmentManager(), "ItemFragment");
-
-        });
-
-        btn_write.setOnClickListener(v -> {
-
-            String input = edit.getText().toString();
-            if (TextUtils.isEmpty(input)) {
-                return;
-            }
-            if (!bluetoothModule.isConnected()) {
-                Toast.makeText(MainActivity.this, "블루투스 연결을 먼저해주세요", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            tv2.setText("");
-            bluetoothModule.sendProtocol(input, new BluetoothModule.BluetoothWriteImpl() {
-                @Override
-                public void onSuccessWrite(int status, String data) {
-
-                    tv2.setText(tv2.getText() + "\n" + data);
-                }
-
-                @Override
-                public void onFailed(Exception e) {
-
-                }
-            });
-        });
     }
 
     @Override
@@ -255,14 +289,35 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         System.out.println("Destroyed");
     }
 
-    public static class leftOb {
-        public static int cnt = 0;
 
-        public static String get() {
+    public Single<String> get(String protocol) {
+
+        return Single.create(emitter -> {
+            bluetoothModule.sendProtocol(protocol, new BluetoothModule.BluetoothWriteImpl() {
+                @Override
+                public void onSuccessWrite(int status, String data) throws IOException {
+                    emitter.onSuccess(data);
+                }
+
+                @Override
+                public void onFailed(Exception e) {
+                    emitter.onError(e);
+                }
+
+            });
+
+        });
+    }
+
+
+    public class leftOb {
+        public int cnt = 0;
+
+        public String get(String left) {
             if (cnt++ > 9) {
-                return "LEFT 카운트 종료합니다";
+                return String.valueOf(cnt);
             }
-            return "left 카운트 중 :" + cnt;
+            return String.valueOf(cnt);
 
         }
     }
@@ -276,11 +331,9 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
             }
             return "right 카운트 중 :" + cnt;
-
-
         }
-
     }
+
 
     public class RelaxLeftThread extends Thread {
         Boolean started = true;
@@ -317,6 +370,16 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         }
     }
 
+    public static class RelaxRight {
+
+        public static String get(String position) throws IOException {
+
+            return position + "오른쪽 돌아가는중";
+        }
+
+
+    }
+
     public class RelaxRightThread extends Thread {
         Boolean started = true;
         String position;
@@ -351,24 +414,6 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
             }
         }
-    }
-
-    public static class OkHttpHelper {
-        private static OkHttpClient client = new OkHttpClient();
-
-        public static String get(String url) throws IOException {
-
-            Request request = new Request.Builder().url(url).build();
-            try {
-
-                Response res = client.newCall(request).execute();
-                return res.body().string();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-                throw e;
-            }
-        }
-
     }
 }
 
