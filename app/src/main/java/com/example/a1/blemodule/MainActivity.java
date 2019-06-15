@@ -17,10 +17,17 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import io.reactivex.Observable;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.angmarch.views.NiceSpinner;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainActivity extends AppCompatActivity implements ItemFragment.OnListFragmentInteractionListener {
 
@@ -99,7 +106,6 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
                     getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
                     recreate();
                 } else {
-                    System.out.println("뭘선택한거야?");
                 }
             }
 
@@ -112,86 +118,55 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         //스레드 시작
         btn_start.setOnClickListener(v -> {
 
-            String _position = "l";
-            if (radio.getCheckedRadioButtonId() == R.id.right) {
-                _position = "r";
+            //특정 데이터를 반환할때까지 반복 ( Speak like a human. )
+            Observable.timer(1, TimeUnit.SECONDS)
+                    .map(it -> "https://api.github.com/zen")
+                    .map(OkHttpHelper::get)
+//                    .map(leftOb::get)
+                    .repeat()
+//                    .takeUntil()
+                    .subscribe(res -> System.out.println(res));
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-            final String position = _position;
-            String input = "rx" + position + "g0";
-
-            // FIXME: 2019-06-14 콜백 지옥 + 스레드 문제
-            bluetoothModule.sendProtocol(input, new BluetoothModule.BluetoothWriteImpl() {
-                @Override
-                public void onSuccessWrite(int status, String data) {
-                    if (data.contains("RR" + position.toUpperCase() + "CM")) { // 시작할 수 있는 상황
-                        bluetoothModule.sendProtocol("rx" + position + "st", new BluetoothModule.BluetoothWriteImpl() {
-                            @Override
-                            public void onSuccessWrite(int status, String data) {
-                                if (position.equals("l")) {
-
-                                    if (leftThread == null) {
-                                        leftThread = new RelaxLeftThread("l");
-                                        leftThread.start();
-                                    } else if (leftThread.isAlive()) {
-                                        System.out.println("왼쪽 체크중입니다");
-                                    } else {
-                                        leftThread = new RelaxLeftThread("l");
-                                        leftThread.start();
-                                    }
-
-                                } else {
-
-                                    if (rightThread == null) {
-                                        rightThread = new RelaxRightThread("r");
-                                        rightThread.start();
-                                    } else if (rightThread.isAlive()) {
-                                        System.out.println("오른쪽 동작중입니다");
-                                    } else {
-                                        rightThread = new RelaxRightThread("r");
-                                        rightThread.start();
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onFailed(Exception e) {
-                                Log.e(TAG, "onFailed: " + e.getMessage());
-                            }
-                        });
-
-                    } else {
-                        Toast.makeText(MainActivity.this, "다른 동작 중입니다", Toast.LENGTH_SHORT).show();
-                    }
-
-                }
-
-                @Override
-                public void onFailed(Exception e) {
-                    Log.e(TAG, "onFailed: " + e.getMessage());
-                }
-            });
+//            if (radio.getCheckedRadioButtonId() == R.id.left) {
+//                if (leftThread == null) {
+//                    leftThread = new RelaxLeftThread("L");
+//                    leftThread.start();
+//                } else {
+//                    System.out.println("L 스레드 동작중이다");
+//                }
+//
+//            } else {
+//                if (rightThread == null) {
+//                    rightThread = new RelaxRightThread("R");
+//                    rightThread.start();
+//                } else {
+//                    System.out.println("R 스레드 동작중이다");
+//                }
+//            }
 
         });
 
         btn_stop.setOnClickListener(v -> {
-            if (radio.getCheckedRadioButtonId() == R.id.right) {
-                System.out.println("오른쪽 스레드 강제종료시도중");
-                if (rightThread != null) {
-                    System.out.println("오른쪽 스레드 강제종료");
-                    rightThread.interrupt();
-                    rightThread.setStarted(false);
-                    rightThread = null;
-                }
+
+            if (radio.getCheckedRadioButtonId() == R.id.left) {
+
+                leftThread.setStarted(false);
+                leftThread.interrupt();
+                leftThread = null;
+
             } else {
-                System.out.println("왼쪽 스레드 강제종료시도중");
-                if (leftThread != null) {
-                    System.out.println("왼쪽 스레드 강제종료");
-                    leftThread.interrupt();
-                    leftThread.setStarted(false);
-                    leftThread = null;
-                }
+
+                rightThread.setStarted(false);
+                rightThread.interrupt();
+                rightThread = null;
             }
+
         });
 
         btn_scan.setOnClickListener(v -> {
@@ -280,18 +255,42 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         System.out.println("Destroyed");
     }
 
+    public static class leftOb {
+        public static int cnt = 0;
+
+        public static String get() {
+            if (cnt++ > 9) {
+                return "LEFT 카운트 종료합니다";
+            }
+            return "left 카운트 중 :" + cnt;
+
+        }
+    }
+
+    public static class rightOb {
+        public static int cnt = 0;
+
+        public static String get() {
+            if (cnt++ > 9) {
+                return "Right 카운트 종료합니다";
+
+            }
+            return "right 카운트 중 :" + cnt;
+
+
+        }
+
+    }
+
     public class RelaxLeftThread extends Thread {
         Boolean started = true;
         String position;
+        int cnt = 0;
 
         public RelaxLeftThread(@NonNull String name) {
             super(name);
             position = name;
 
-        }
-
-        public Boolean getStarted() {
-            return started;
         }
 
         public void setStarted(Boolean started) {
@@ -300,25 +299,17 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
         public void run() {
             while (started) {
-                bluetoothModule.sendProtocol("rxlg0", new BluetoothModule.BluetoothWriteImpl() {
-                    @Override
-                    public void onSuccessWrite(int status, String data) {
-                        if (data.contains("RRLCM")) {
-                            System.out.println(position + "릴랙스 종료합니다");
-                            started = false;
-                            interrupt();
-                            leftThread = null;
-                        }
-                    }
 
-                    @Override
-                    public void onFailed(Exception e) {
-
-                    }
-                });
+                System.out.println(position + " 카운트 중 :" + cnt);
+                if (cnt++ > 9) {
+                    System.out.println(position + " 카운트 종료합니다");
+                    started = false;
+                    interrupt();
+                    leftThread = null;
+                }
 
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -329,15 +320,12 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
     public class RelaxRightThread extends Thread {
         Boolean started = true;
         String position;
+        int cnt = 0;
 
         public RelaxRightThread(@NonNull String name) {
             super(name);
             position = name;
 
-        }
-
-        public Boolean getStarted() {
-            return started;
         }
 
         public void setStarted(Boolean started) {
@@ -347,30 +335,40 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         public void run() {
             while (started) {
 
-                bluetoothModule.sendProtocol("rxrg0", new BluetoothModule.BluetoothWriteImpl() {
-                    @Override
-                    public void onSuccessWrite(int status, String data) {
-                        if (data.contains("RRRCM")) {
-                            System.out.println(position + "릴랙스 종료합니다");
-                            started = false;
-                            interrupt();
-                            rightThread = null;
-                        }
-                    }
-
-                    @Override
-                    public void onFailed(Exception e) {
-
-                    }
-                });
+                System.out.println(position + " 카운트 중 : " + cnt);
+                if (cnt++ > 9) {
+                    System.out.println(position + "릴랙스 종료합니다");
+                    started = false;
+                    interrupt();
+                    rightThread = null;
+                }
 
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
             }
         }
+    }
+
+    public static class OkHttpHelper {
+        private static OkHttpClient client = new OkHttpClient();
+
+        public static String get(String url) throws IOException {
+
+            Request request = new Request.Builder().url(url).build();
+            try {
+
+                Response res = client.newCall(request).execute();
+                return res.body().string();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+                throw e;
+            }
+        }
+
     }
 }
 
