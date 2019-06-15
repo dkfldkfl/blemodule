@@ -3,6 +3,7 @@ package com.example.a1.blemodule;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 
 import org.angmarch.views.NiceSpinner;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -414,6 +416,19 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
             }
         }
+    }
+
+    public Observable<String> uploadFile(File file) {
+
+        return Observable.create(emitter -> {
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
+        });
+
     }
 }
 
