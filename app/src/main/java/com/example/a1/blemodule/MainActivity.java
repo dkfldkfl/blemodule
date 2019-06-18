@@ -3,9 +3,9 @@ package com.example.a1.blemodule;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -18,17 +18,18 @@ import android.widget.TextView;
 
 import org.angmarch.views.NiceSpinner;
 
-import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.MaybeSubject;
 
 public class MainActivity extends AppCompatActivity implements ItemFragment.OnListFragmentInteractionListener {
 
@@ -42,12 +43,10 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
     BluetoothModule bluetoothModule = BluetoothModule.getInstance();
     RadioGroup radio;
 
-    RelaxLeftThread leftThread;
-    RelaxRightThread rightThread;
-
     FrameLayout layout;
     private int DEVCIE_LIST_BT_ACTIVITY = 99;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -121,6 +120,9 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
             //특정 데이터를 반환할때까지 반복 ( Speak like a human. )
 
+
+            String protocol = "";
+            String param = "";
             if (radio.getCheckedRadioButtonId() == R.id.left) {
 
                 bluetoothModule.sendProtocol("rxlg0", new BluetoothModule.BluetoothWriteImpl() {
@@ -132,8 +134,8 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
                         String protocol = "rxlst";
                         Observable.just(protocol)
+                                .switchMapMaybe(it -> get(it))
                                 .subscribeOn(Schedulers.single())
-                                .switchMapSingle(it -> get(it))
                                 .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
                                 .takeUntil(it -> {
                                     if (it.equals("RRLCM")) return true;
@@ -181,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
                         String protocol = "rxrst";
                         Observable.just(protocol)
                                 .subscribeOn(Schedulers.single())
-                                .switchMapSingle(it -> get(it))
+                                .switchMapMaybe(it -> get(it))
                                 .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
                                 .takeUntil(it -> {
                                     if (it.equals("RRRCM")) return true;
@@ -221,21 +223,31 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
         btn_stop.setOnClickListener(v -> {
 
-            if (radio.getCheckedRadioButtonId() == R.id.left) {
+            Observable<String> tuple2Observable = Observable.just(1, 2, 3, 4, 5, 6)
+                    .flatMap(integer ->
+                            Observable.fromCallable(() -> getVitalName(integer))
+                                    .subscribeOn(Schedulers.single())
+                                    .doOnNext(s -> System.out.println("Value:: " + Thread.currentThread().getName() + "-" + Instant.now()))
+                                    .map(s -> s)
+                    ).doOnComplete(() -> System.out.println("Finished:: " + Thread.currentThread().getName() + "-" + Instant.now()));
 
-                leftThread.setStarted(false);
-                leftThread.interrupt();
-                leftThread = null;
-
-            } else {
-
-                rightThread.setStarted(false);
-                rightThread.interrupt();
-                rightThread = null;
+            try {
+                tuple2Observable.test()
+                        .await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-
         });
+    }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public String getVitalName(int vitalId) throws Exception {
+        System.out.println("getVitalName method called with vitalId = " + vitalId + "-" + Thread.currentThread().getName() + "-" + Instant.now());
+
+        Thread.sleep(500);
+
+        String name = "le fake value";
+        return name;
     }
 
     @Override
@@ -289,146 +301,30 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
     protected void onDestroy() {
         super.onDestroy();
         System.out.println("Destroyed");
+
+
     }
 
 
-    public Single<String> get(String protocol) {
+    public Maybe<String> get(String protocol) {
 
-        return Single.create(emitter -> {
-            bluetoothModule.sendProtocol(protocol, new BluetoothModule.BluetoothWriteImpl() {
-                @Override
-                public void onSuccessWrite(int status, String data) throws IOException {
-                    emitter.onSuccess(data);
-                }
-
-                @Override
-                public void onFailed(Exception e) {
-                    emitter.onError(e);
-                }
-
-            });
-
-        });
-    }
-
-
-    public class leftOb {
-        public int cnt = 0;
-
-        public String get(String left) {
-            if (cnt++ > 9) {
-                return String.valueOf(cnt);
+        MaybeSubject<String> maybeSubject = MaybeSubject.create();
+        bluetoothModule.sendProtocol(protocol, new BluetoothModule.BluetoothWriteImpl() {
+            @Override
+            public void onSuccessWrite(int status, String data) {
+                maybeSubject.onSuccess(data);
             }
-            return String.valueOf(cnt);
 
-        }
-    }
-
-    public static class rightOb {
-        public static int cnt = 0;
-
-        public static String get() {
-            if (cnt++ > 9) {
-                return "Right 카운트 종료합니다";
-
+            @Override
+            public void onFailed(Exception e) {
+                maybeSubject.onError(e);
+                maybeSubject.onComplete();
             }
-            return "right 카운트 중 :" + cnt;
-        }
-    }
-
-
-    public class RelaxLeftThread extends Thread {
-        Boolean started = true;
-        String position;
-        int cnt = 0;
-
-        public RelaxLeftThread(@NonNull String name) {
-            super(name);
-            position = name;
-
-        }
-
-        public void setStarted(Boolean started) {
-            this.started = started;
-        }
-
-        public void run() {
-            while (started) {
-
-                System.out.println(position + " 카운트 중 :" + cnt);
-                if (cnt++ > 9) {
-                    System.out.println(position + " 카운트 종료합니다");
-                    started = false;
-                    interrupt();
-                    leftThread = null;
-                }
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public static class RelaxRight {
-
-        public static String get(String position) throws IOException {
-
-            return position + "오른쪽 돌아가는중";
-        }
-
-
-    }
-
-    public class RelaxRightThread extends Thread {
-        Boolean started = true;
-        String position;
-        int cnt = 0;
-
-        public RelaxRightThread(@NonNull String name) {
-            super(name);
-            position = name;
-
-        }
-
-        public void setStarted(Boolean started) {
-            this.started = started;
-        }
-
-        public void run() {
-            while (started) {
-
-                System.out.println(position + " 카운트 중 : " + cnt);
-                if (cnt++ > 9) {
-                    System.out.println(position + "릴랙스 종료합니다");
-                    started = false;
-                    interrupt();
-                    rightThread = null;
-                }
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }
-    }
-
-    public Observable<String> uploadFile(File file) {
-
-        return Observable.create(emitter -> {
-            AsyncTask.execute(new Runnable() {
-                @Override
-                public void run() {
-
-                }
-            });
         });
 
+        return maybeSubject;
+
     }
+
 }
 
