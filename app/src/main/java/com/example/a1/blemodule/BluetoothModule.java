@@ -53,7 +53,7 @@ public class BluetoothModule {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(context, "연결이 끊어졌습니다\n다시 연결중입니다기다려주세요", Toast.LENGTH_SHORT).show();
+                        btConnectCallback.onFailed();
                     }
                 });
 
@@ -154,7 +154,6 @@ public class BluetoothModule {
 
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
         bluetoothGatt = device.connectGatt(context, true, gattCallback);
-
     }
 
     /**

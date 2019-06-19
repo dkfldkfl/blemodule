@@ -23,11 +23,11 @@
         android:layout_below="@+id/tv1" />
 
     <EditText
-        android:focusableInTouchMode="false"
         android:id="@+id/edit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
+        android:focusableInTouchMode="false"
         android:inputType="text"
         tools:ignore="LabelFor" />
 
@@ -84,23 +84,26 @@
             android:text="@string/right" />
     </RadioGroup>
 
-    <Button
-        android:id="@+id/btn_firm"
+    <org.angmarch.views.NiceSpinner
+        android:id="@+id/spin_firm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/btn_stop"
         android:layout_alignParentEnd="true"
-        android:text="경도조절" />
+        android:hint="경도선택"
+
+        />
 
 
     <org.angmarch.views.NiceSpinner
         android:id="@+id/locale"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btn_firm"
+        android:layout_below="@id/spin_firm"
         android:layout_alignParentEnd="true"
         android:hint="선택"
         android:textAlignment="center"
+        android:visibility="gone"
         app:backgroundSelector="@drawable/spinner_back_selector" />
 
     <FrameLayout
