@@ -3,17 +3,10 @@ package com.example.a1.blemodule;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import io.reactivex.Observable;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class Test extends AppCompatActivity {
 
@@ -141,23 +134,5 @@ public class Test extends AppCompatActivity {
                 }
             }
         }
-    }
-
-    public static class OkHttpHelper {
-        private static OkHttpClient client = new OkHttpClient();
-
-        public static String get(String url) throws IOException {
-
-            Request request = new Request.Builder().url(url).build();
-            try {
-
-                Response res = client.newCall(request).execute();
-                return res.body().string();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-                throw e;
-            }
-        }
-
     }
 }

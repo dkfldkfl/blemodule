@@ -42,20 +42,10 @@ public class BluetoothModule {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
 
                 bluetoothGatt.discoverServices(); // onServicesDiscovered() 호출 (서비스 연결 위해 꼭 필요)
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(context, "연결됐어요", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                handler.post(() -> Toast.makeText(context, "연결됐어요", Toast.LENGTH_SHORT).show());
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(context, "연결이 끊어졌습니다\n다시 연결중입니다기다려주세요", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                handler.post(() -> Toast.makeText(context, "연결이 끊어졌습니다\n다시 연결중입니다기다려주세요", Toast.LENGTH_SHORT).show());
 
             }
         }
@@ -168,7 +158,6 @@ public class BluetoothModule {
 
             this.btWriteCallback = btWriteCallback;
             protocol = "<" + protocol.toUpperCase() + ">";
-//            protocol = protocol.toUpperCase();
             writeGattCharacteristic.setValue(protocol);
             bluetoothGatt.writeCharacteristic(writeGattCharacteristic);
         }
