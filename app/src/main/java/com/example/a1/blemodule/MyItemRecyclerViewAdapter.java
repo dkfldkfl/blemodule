@@ -1,6 +1,5 @@
 package com.example.a1.blemodule;
 
-import android.bluetooth.BluetoothDevice;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,9 +14,9 @@ import java.util.ArrayList;
 public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecyclerViewAdapter.ViewHolder> {
 
     private final OnListFragmentInteractionListener mListener;
-    ArrayList<BluetoothDevice> deviceList;
+    ArrayList<BTModel> deviceList;
 
-    public MyItemRecyclerViewAdapter(ArrayList<BluetoothDevice> items, OnListFragmentInteractionListener listener) {
+    public MyItemRecyclerViewAdapter(ArrayList<BTModel> items, OnListFragmentInteractionListener listener) {
         deviceList = items;
         mListener = listener;
     }
@@ -31,9 +30,8 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
-        holder.mItem = deviceList.get(position);
         holder.name.setText(deviceList.get(position).getName());
-        holder.address.setText(deviceList.get(position).getAddress());
+        holder.address.setText(deviceList.get(position).getMac());
     }
 
     @Override
@@ -47,7 +45,6 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
         public final TextView name;
         public final TextView address;
         public final RelativeLayout item_layout;
-        public BluetoothDevice mItem;
 
         public ViewHolder(View view) {
             super(view);
@@ -57,13 +54,10 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
             address = (TextView) view.findViewById(R.id.address);
             item_layout = (RelativeLayout) view.findViewById(R.id.item_layout);
 
-            item_layout.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if(mListener!=null){
-                        mListener.onListFragmentInteraction(deviceList.get(getAdapterPosition()));
+            item_layout.setOnClickListener(v -> {
+                if (mListener != null) {
+                    mListener.onListFragmentInteraction(deviceList.get(getAdapterPosition()));
 
-                    }
                 }
             });
 

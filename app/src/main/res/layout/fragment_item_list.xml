@@ -18,8 +18,8 @@
         tools:listitem="@layout/fragment_item" />
 
     <Button
-        android:id="@+id/btn_cancel"
+        android:id="@+id/btn_rescan"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="스캔시작" />
+        android:text="다시찾기" />
 </LinearLayout>

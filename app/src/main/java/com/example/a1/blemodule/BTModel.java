@@ -4,40 +4,21 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class BTModel implements Parcelable {
-    public static final Creator<BTModel> CREATOR = new Creator<BTModel>() {
-        @Override
-        public BTModel createFromParcel(Parcel in) {
-            return new BTModel(in);
-        }
 
-        @Override
-        public BTModel[] newArray(int size) {
-            return new BTModel[size];
-        }
-    };
     private String name;
     private String mac;
-    private String rssi;
-
-    public BTModel(String name, String mac, String rssi) {
-        this.name = name;
-        this.mac = mac;
-        this.rssi = rssi;
-    }
+    private int rssi;
 
     protected BTModel(Parcel in) {
         name = in.readString();
         mac = in.readString();
-        rssi = in.readString();
+        rssi = in.readInt();
     }
 
-    @Override
-    public String toString() {
-        return "BTModel{" +
-                "name='" + name + '\'' +
-                ", mac='" + mac + '\'' +
-                ", rssi='" + rssi + '\'' +
-                '}';
+    public BTModel(String name, String mac, int rssi) {
+        this.name = name;
+        this.mac = mac;
+        this.rssi = rssi;
     }
 
     public String getName() {
@@ -56,13 +37,25 @@ public class BTModel implements Parcelable {
         this.mac = mac;
     }
 
-    public String getRssi() {
+    public int getRssi() {
         return rssi;
     }
 
-    public void setRssi(String rssi) {
+    public void setRssi(int rssi) {
         this.rssi = rssi;
     }
+
+    public static final Creator<BTModel> CREATOR = new Creator<BTModel>() {
+        @Override
+        public BTModel createFromParcel(Parcel in) {
+            return new BTModel(in);
+        }
+
+        @Override
+        public BTModel[] newArray(int size) {
+            return new BTModel[size];
+        }
+    };
 
     @Override
     public int describeContents() {
@@ -73,6 +66,6 @@ public class BTModel implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(name);
         dest.writeString(mac);
-        dest.writeString(rssi);
+        dest.writeInt(rssi);
     }
 }

@@ -8,3 +8,10 @@
 /build
 /captures
 .externalNativeBuild
+/.idea/
+/gradle/
+.idea/codeStyles/codeStyleConfig.xml
+.idea/dbnavigator.xml
+.idea/encodings.xml
+.idea/vcs.xml
+/.idea/codeStyles/Project.xml
