@@ -128,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
          * 5. 다국어 설정
          *
          */
+
         btn_scan.setOnClickListener(v -> {
             checkPermissionBluetooth();
         });
@@ -324,10 +325,8 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
                         @Override
                         public void onFailed(Exception e) {
-
                         }
                     });
-
                 }
             }
 
@@ -406,31 +405,6 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
     }
 
     @Override
-    public void onListFragmentInteraction(BluetoothDevice item) {
-        bluetoothModule.disconnect();
-        itemFragment.dismiss();
-        bluetoothModule.gattConnect(item.getAddress(), new BluetoothModule.BluetoothConnectImpl() {
-            @Override
-            public void onSuccessConnect(BluetoothDevice device) {
-
-                String[] name = device.getName().split("-");
-                if (name[1].equals("4")) {
-                    tv1.setText("i4-QN에 연결됐습니다    " + device.getName() + " / " + device.getAddress());
-                } else if (name[1].equals("3")) {
-                    tv1.setText("i3-QN에 연결됐습니다    " + device.getName() + " / " + device.getAddress());
-                } else {
-                    tv1.setText("i3-SS에 연결됐습니다    " + device.getName() + " / " + device.getAddress());
-                }
-            }
-
-            @Override
-            public void onFailed() {
-                tv1.setText("연결 실패 다시 연결중입니다.");
-            }
-        }, MainActivity.this);
-    }
-
-    @Override
     protected void onDestroy() {
         super.onDestroy();
         System.out.println("Destroyed");
@@ -479,6 +453,32 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
     }
 
+    //BT 선택시
+    @Override
+    public void onListFragmentInteraction(BTModel item) {
 
+        bluetoothModule.disconnect();
+        itemFragment.dismiss();
+        bluetoothModule.gattConnect(item.getMac(), new BluetoothModule.BluetoothConnectImpl() {
+            @Override
+            public void onSuccessConnect(BluetoothDevice device) {
+
+                String[] name = device.getName().split("-");
+                if (name[1].equals("4")) {
+                    tv1.setText("i4-QN에 연결됐습니다    " + device.getName() + " / " + device.getAddress());
+                } else if (name[1].equals("3")) {
+                    tv1.setText("i3-QN에 연결됐습니다    " + device.getName() + " / " + device.getAddress());
+                } else {
+                    tv1.setText("i3-SS에 연결됐습니다    " + device.getName() + " / " + device.getAddress());
+                }
+            }
+
+            @Override
+            public void onFailed() {
+                tv1.setText("연결 실패 다시 연결중입니다.");
+            }
+        }, MainActivity.this);
+
+    }
 }
 

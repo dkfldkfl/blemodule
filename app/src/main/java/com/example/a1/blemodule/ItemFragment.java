@@ -1,19 +1,16 @@
 package com.example.a1.blemodule;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -31,7 +28,7 @@ public class ItemFragment extends DialogFragment {
 
     public static final String TAG = "DeviceListBTActivity";
     private static final long SCAN_PERIOD = 10000; //scanning for 10 seconds
-    ArrayList<BluetoothDevice> deviceList = new ArrayList<>();
+    ArrayList<BTModel> deviceList = new ArrayList<>();
     MyItemRecyclerViewAdapter adapter;
 
     private OnListFragmentInteractionListener mListener;
@@ -73,6 +70,11 @@ public class ItemFragment extends DialogFragment {
         recyclerView.setAdapter(adapter);
 
         scanLeDevice(true);
+
+        cancelButton.setOnClickListener(v -> {
+            if (mScanning == false) scanLeDevice(true);
+            else dismiss();
+        });
     }
 
     /**
@@ -85,59 +87,37 @@ public class ItemFragment extends DialogFragment {
         if (enable) {
             BluetoothModule.getInstance().disconnect();
             //롤리팝 기준으로 분기 처리 (킷캣 별도 처리)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                mHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        scanner.stopScan(scanCallback);
-                        mScanning = false;
-                        cancelButton.setText("스캔시작");
-                    }
-                }, SCAN_PERIOD);
+            mHandler.postDelayed(() -> {
+                scanner.stopScan(scanCallback);
+                mScanning = false;
+                cancelButton.setText("다시찾기");
+            }, SCAN_PERIOD);
 
-                mScanning = true;
-                scanner = mBluetoothAdapter.getBluetoothLeScanner();
-                List<ScanFilter> scanFilters = new ArrayList<>();
-                ScanFilter scanFilter = new ScanFilter.Builder()
+            mScanning = true;
+            scanner = mBluetoothAdapter.getBluetoothLeScanner();
+            List<ScanFilter> scanFilters = new ArrayList<>();
+            ScanFilter scanFilter = new ScanFilter.Builder()
 //                        .setServiceUuid(ParcelUuid.fromString(IOBEDApplication.IOBED_SERIVCE.toString()))
-                        .build();
+                    .build();
 
-                scanFilters.add(scanFilter);
-                ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
-                scanner.startScan(scanFilters, scanSettings, scanCallback);
-                cancelButton.setText("취소");
+            scanFilters.add(scanFilter);
+            ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
+            scanner.startScan(scanFilters, scanSettings, scanCallback);
+            cancelButton.setText("취소");
 
-            } else {
-                mHandler.postDelayed(() -> {
-                    mScanning = false;
-                    mBluetoothAdapter.stopLeScan(scanLeCallBack);
-                    cancelButton.setText("스캔시작");
-                }, SCAN_PERIOD);
-
-                mScanning = true;
-                mBluetoothAdapter.startLeScan(scanLeCallBack);
-                cancelButton.setText("취소");
-            }
         }
     }
 
-    public BluetoothAdapter.LeScanCallback scanLeCallBack = (device, rssi, scanRecord) -> {
-
-        if (deviceList.contains(device)) //중복 검색 제외
-            return;
-
-        getActivity().runOnUiThread(() -> addDevice(device));
-    };
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, final ScanResult result) {
             super.onScanResult(callbackType, result);
 
+            Log.d(TAG, "onScanResult: " + result.getDevice().getName() + "FOUND");
             if (deviceList.contains(result.getDevice())) //중복 검색 제외
                 return;
 
-            addDevice(result.getDevice());
+            addDevice(new BTModel(result.getDevice().getName(), result.getDevice().getAddress(), result.getRssi()));
         }
 
         @Override
@@ -152,7 +132,7 @@ public class ItemFragment extends DialogFragment {
         }
     };
 
-    private void addDevice(BluetoothDevice device) {
+    private void addDevice(BTModel device) {
 
         deviceList.add(device);
         adapter.notifyDataSetChanged();
@@ -177,6 +157,6 @@ public class ItemFragment extends DialogFragment {
 
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(BluetoothDevice item);
+        void onListFragmentInteraction(BTModel item);
     }
 }
