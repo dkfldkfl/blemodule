@@ -100,7 +100,7 @@ public class BluetoothModule {
                         return;
                     }
                     try {
-                        Log.d(TAG, "run: " + value);
+//                        Log.d(TAG, "run: " + value);
                         btWriteCallback.onSuccessWrite(0, value);
                     } catch (IOException e) {
                         e.printStackTrace();

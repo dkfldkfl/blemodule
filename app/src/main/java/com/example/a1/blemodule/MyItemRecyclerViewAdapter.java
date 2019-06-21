@@ -32,6 +32,7 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.name.setText(deviceList.get(position).getName());
         holder.address.setText(deviceList.get(position).getMac());
+
     }
 
     @Override

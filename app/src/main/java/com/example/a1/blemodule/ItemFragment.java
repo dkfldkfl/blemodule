@@ -1,6 +1,7 @@
 package com.example.a1.blemodule;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -36,7 +37,7 @@ public class ItemFragment extends DialogFragment {
     private Handler mHandler;
     private boolean mScanning;
     private BluetoothLeScanner scanner;
-    private Button cancelButton;
+    private Button rescan;
 
     public static ItemFragment newInstance() {
 
@@ -61,17 +62,18 @@ public class ItemFragment extends DialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        cancelButton = view.findViewById(R.id.btn_cancel);
+        rescan = view.findViewById(R.id.btn_rescan);
         mHandler = new Handler();
 
         RecyclerView recyclerView = view.findViewById(R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new MyItemRecyclerViewAdapter(deviceList, mListener);
         recyclerView.setAdapter(adapter);
-
         scanLeDevice(true);
 
-        cancelButton.setOnClickListener(v -> {
+        rescan.setOnClickListener(v -> {
+            deviceList.clear();
+            adapter.notifyDataSetChanged();
             if (mScanning == false) scanLeDevice(true);
             else dismiss();
         });
@@ -90,20 +92,24 @@ public class ItemFragment extends DialogFragment {
             mHandler.postDelayed(() -> {
                 scanner.stopScan(scanCallback);
                 mScanning = false;
-                cancelButton.setText("다시찾기");
+                rescan.setText("다시찾기");
             }, SCAN_PERIOD);
 
             mScanning = true;
+
+            final BluetoothManager bluetoothManager = (BluetoothManager) getContext().getSystemService(Context.BLUETOOTH_SERVICE);
+            mBluetoothAdapter = bluetoothManager.getAdapter();
+
             scanner = mBluetoothAdapter.getBluetoothLeScanner();
             List<ScanFilter> scanFilters = new ArrayList<>();
             ScanFilter scanFilter = new ScanFilter.Builder()
-//                        .setServiceUuid(ParcelUuid.fromString(IOBEDApplication.IOBED_SERIVCE.toString()))
+//                    .setServiceUuid(ParcelUuid.fromString(IOBEDApplication.IOBED_SERIVCE.toString()))
                     .build();
 
             scanFilters.add(scanFilter);
             ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
             scanner.startScan(scanFilters, scanSettings, scanCallback);
-            cancelButton.setText("취소");
+            rescan.setText("취소");
 
         }
     }
@@ -113,9 +119,13 @@ public class ItemFragment extends DialogFragment {
         public void onScanResult(int callbackType, final ScanResult result) {
             super.onScanResult(callbackType, result);
 
-            Log.d(TAG, "onScanResult: " + result.getDevice().getName() + "FOUND");
-            if (deviceList.contains(result.getDevice())) //중복 검색 제외
-                return;
+            Log.d(TAG, "onScanResult: " + result.getDevice().getName() + " : FOUND");
+            for (int i = 0; i < deviceList.size(); i++) {
+
+                if (deviceList.get(i).getMac().equals(result.getDevice().getAddress())) {
+                    return;
+                }
+            }
 
             addDevice(new BTModel(result.getDevice().getName(), result.getDevice().getAddress(), result.getRssi()));
         }
@@ -153,6 +163,9 @@ public class ItemFragment extends DialogFragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        if(mScanning){
+            scanner.stopScan(scanCallback);
+        }
     }
 
     public interface OnListFragmentInteractionListener {

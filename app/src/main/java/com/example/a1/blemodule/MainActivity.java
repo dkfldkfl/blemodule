@@ -30,12 +30,11 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-import io.reactivex.subjects.MaybeSubject;
 
 public class MainActivity extends AppCompatActivity implements ItemFragment.OnListFragmentInteractionListener {
 
@@ -125,8 +124,7 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
          * 2. RX Polling
          * 3. 비디오 플레이어 테스트
          * 4. 레이아웃작성
-         * 5. 다국어 설정
-         *
+         * 5. 다국어 설정 Language ->
          */
 
         btn_scan.setOnClickListener(v -> {
@@ -135,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
         //스레드 시작
         btn_start.setOnClickListener(v -> {
-
+            //Fragment 화면 띄워 주기
 
             if (radio.getCheckedRadioButtonId() == R.id.left) {
 
@@ -147,36 +145,46 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
                             System.out.println("지금 바쁜 상태입니다");
                         }
 
-                        String protocol = "rxlst";
-                        Observable.just(protocol)
-                                .delay(5, TimeUnit.SECONDS)
-                                .switchMapMaybe(it -> get(it))
-                                .subscribeOn(Schedulers.trampoline())
-                                .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
-                                .takeUntil(it -> {
-                                    if (it.equals("RRLCM")) return true;
-                                    else return false;
-                                }).subscribeWith(new Observer<String>() {
+                        bluetoothModule.sendProtocol("rxlst", new BluetoothModule.BluetoothWriteImpl() {
                             @Override
-                            public void onSubscribe(Disposable d) {
+                            public void onSuccessWrite(int status, String data) throws IOException {
+                                Observable.just("rxlg0")
+                                        .delay(5, TimeUnit.SECONDS)
+                                        .switchMapSingle(it -> get(it))
+                                        .subscribeOn(Schedulers.newThread())
+                                        .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
+                                        .takeUntil(it -> {
+                                            if (it.equals("RRLCM")) return true;
+                                            else return false;
+                                        }).subscribeWith(new Observer<String>() {
+                                    @Override
+                                    public void onSubscribe(Disposable d) {
 
+                                    }
+
+                                    @Override
+                                    public void onNext(String s) {
+                                        System.out.println(s);
+                                    }
+
+                                    @Override
+                                    public void onError(Throwable e) {
+
+                                    }
+
+                                    @Override
+                                    public void onComplete() {
+                                        System.out.println("왼쪽 정상적으로 종료되었습니다");
+                                    }
+                                });
                             }
 
                             @Override
-                            public void onNext(String s) {
-                                System.out.println(s);
-                            }
+                            public void onFailed(Exception e) {
 
-                            @Override
-                            public void onError(Throwable e) {
-
-                            }
-
-                            @Override
-                            public void onComplete() {
-                                System.out.println("왼쪽 정상적으로 종료되었습니다");
                             }
                         });
+
                     }
 
                     @Override
@@ -195,36 +203,46 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
                             return;
                         }
 
-                        String protocol = "rxrst";
-                        Observable.just(protocol)
-                                .delay(5, TimeUnit.SECONDS)
-                                .subscribeOn(Schedulers.trampoline())
-                                .switchMapMaybe(it -> get(it))
-                                .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
-                                .takeUntil(it -> {
-                                    if (it.equals("RRRCM")) return true;
-                                    else return false;
-                                }).subscribeWith(new Observer<String>() {
+                        bluetoothModule.sendProtocol("rxrst", new BluetoothModule.BluetoothWriteImpl() {
                             @Override
-                            public void onSubscribe(Disposable d) {
+                            public void onSuccessWrite(int status, String data) throws IOException {
+                                Observable.just("rxrg0")
+                                        .delay(5, TimeUnit.SECONDS)
+                                        .subscribeOn(Schedulers.newThread())
+                                        .switchMapSingle(it -> get(it))
+                                        .repeatWhen(o -> o.delay(2, TimeUnit.SECONDS))
+                                        .takeUntil(it -> {
+                                            if (it.equals("RRRCM")) return true;
+                                            else return false;
+                                        }).subscribeWith(new Observer<String>() {
+                                    @Override
+                                    public void onSubscribe(Disposable d) {
 
+                                    }
+
+                                    @Override
+                                    public void onNext(String s) {
+                                        System.out.println(s);
+                                    }
+
+                                    @Override
+                                    public void onError(Throwable e) {
+
+                                    }
+
+                                    @Override
+                                    public void onComplete() {
+                                        System.out.println("오른쪽 정상적으로 종료되었습니다");
+                                    }
+                                });
                             }
 
                             @Override
-                            public void onNext(String s) {
-                                System.out.println(s);
-                            }
+                            public void onFailed(Exception e) {
 
-                            @Override
-                            public void onError(Throwable e) {
-
-                            }
-
-                            @Override
-                            public void onComplete() {
-                                System.out.println("오른쪽 정상적으로 종료되었습니다");
                             }
                         });
+
                     }
 
                     @Override
@@ -252,11 +270,11 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
                             Observable.just("ctl0")
                                     .delay(3, TimeUnit.SECONDS)
-                                    .switchMapMaybe(it -> get(it))
-                                    .subscribeOn(Schedulers.trampoline())
+                                    .switchMapSingle(it -> get(it))
+                                    .subscribeOn(Schedulers.newThread())
                                     .repeatWhen(o -> o.delay(1, TimeUnit.SECONDS))
                                     .takeUntil(it -> {
-                                        if (it.equals("CRLM")) return true;
+                                        if (it.equals("CPL" + set + "0")) return true;
                                         else return false;
                                     }).subscribeWith(new Observer<String>() {
                                 @Override
@@ -294,11 +312,11 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
                             Observable.just("ctr0")
                                     .delay(3, TimeUnit.SECONDS)
-                                    .switchMapMaybe(it -> get(it))
-                                    .subscribeOn(Schedulers.trampoline())
+                                    .switchMapSingle(it -> get(it))
+                                    .subscribeOn(Schedulers.newThread())
                                     .repeatWhen(o -> o.delay(1, TimeUnit.SECONDS))
                                     .takeUntil(it -> {
-                                        if (it.equals("CRRM")) return true;
+                                        if (it.equals("CPR" + set + "0")) return true;
                                         else return false;
                                     }).subscribeWith(new Observer<String>() {
                                 @Override
@@ -404,14 +422,6 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        System.out.println("Destroyed");
-        bluetoothModule.disconnect();
-    }
-/*
-
     public Single<String> get(String protocol) {
 
         return Single.create(emitter -> {
@@ -430,16 +440,15 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
         });
     }
-    */
-
+/*
     public Maybe<String> get(String protocol) {
 
         MaybeSubject<String> maybeSubject = MaybeSubject.create();
         bluetoothModule.sendProtocol(protocol, new BluetoothModule.BluetoothWriteImpl() {
             @Override
             public void onSuccessWrite(int status, String data) {
-                maybeSubject.onSuccess(data);
                 Log.d(TAG, "onSuccessWrite: " + data);
+                maybeSubject.onSuccess(data);
             }
 
             @Override
@@ -451,7 +460,7 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
 
         return maybeSubject;
 
-    }
+    }*/
 
     //BT 선택시
     @Override
@@ -479,6 +488,14 @@ public class MainActivity extends AppCompatActivity implements ItemFragment.OnLi
             }
         }, MainActivity.this);
 
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        System.out.println("Destroyed");
+        bluetoothModule.disconnect();
     }
 }
 
